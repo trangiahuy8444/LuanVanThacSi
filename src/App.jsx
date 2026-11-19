@@ -100,13 +100,13 @@ export default function App() {
         {isVisible('overview') && (
           <section className="bg-white border border-slate-300 rounded-2xl p-6 md:p-8 space-y-6 shadow-sm">
             {/* KHỐI NHẬP MÔN CHO NGƯỜI MỚI CHƯA BIẾT GÌ */}
-            <div className="p-5 md:p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white space-y-4 shadow-md">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="p-5 md:p-6 rounded-2xl bg-slate-50 border-2 border-blue-200 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3.5">
                 <div className="space-y-1">
-                  <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-sky-300">
+                  <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-blue-700">
                     <Compass size={14} /> BẮT ĐẦU NHANH TRONG 2 PHÚT — DÀNH CHO NGƯỜI MỚI ĐỌC LẦN ĐẦU
                   </div>
-                  <h2 className="text-xl md:text-2xl font-extrabold text-white">
+                  <h2 className="text-xl md:text-2xl font-extrabold text-slate-900">
                     Luận văn này đang giải quyết vấn đề gì? (Giải thích bằng ngôn ngữ dễ hiểu)
                   </h2>
                 </div>
@@ -114,7 +114,7 @@ export default function App() {
                   href={DRIVE_FOLDER_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white transition shadow-sm"
                 >
                   <ExternalLink size={14} />
                   Mở Đề cương PDF &amp; 32 Bài báo gốc trên Drive
@@ -122,44 +122,44 @@ export default function App() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-                <div className="p-3.5 rounded-xl bg-white/10 border border-white/15 space-y-1.5">
-                  <div className="font-extrabold text-sky-300">Bước 1 · Đầu vào là gì?</div>
-                  <p className="text-slate-100 leading-relaxed">
-                    Mạng lưới thay đổi mỗi ngày (ví dụ: ai chuyển tiền cho ai trên Ethereum, hoặc ai trả lời ai trên MathOverflow). Mỗi ngày tạo thành 1 <strong>ảnh chụp đồ thị</strong> gồm hàng trăm tài khoản và giao dịch.
+                <div className="p-4 rounded-xl bg-white border border-slate-200 border-t-4 border-t-blue-600 space-y-1.5 shadow-xs">
+                  <div className="font-extrabold text-blue-800">Bước 1 · Đầu vào là gì?</div>
+                  <p className="text-slate-700 leading-relaxed">
+                    Mạng lưới thay đổi mỗi ngày (ví dụ: ai chuyển tiền cho ai trên Ethereum, hoặc ai trả lời ai trên MathOverflow). Mỗi ngày tạo thành 1 <strong className="text-slate-900">ảnh chụp đồ thị</strong> gồm hàng trăm tài khoản và giao dịch.
                   </p>
                 </div>
-                <div className="p-3.5 rounded-xl bg-white/10 border border-white/15 space-y-1.5">
-                  <div className="font-extrabold text-amber-300">Bước 2 · Mapper làm gì?</div>
-                  <p className="text-slate-100 leading-relaxed">
-                    Thay vì nhìn hàng trăm nút rối rắm, thuật toán <strong>Mapper</strong> nén cả mạng lưới trong ngày thành một "bản đồ tóm tắt" nhỏ (~10–20 cụm nối với nhau) để theo dõi hình dạng tổng thể của mạng theo thời gian.
+                <div className="p-4 rounded-xl bg-white border border-slate-200 border-t-4 border-t-amber-500 space-y-1.5 shadow-xs">
+                  <div className="font-extrabold text-amber-800">Bước 2 · Mapper làm gì?</div>
+                  <p className="text-slate-700 leading-relaxed">
+                    Thay vì nhìn hàng trăm nút rối rắm, thuật toán <strong className="text-slate-900">Mapper</strong> nén cả mạng lưới trong ngày thành một &ldquo;bản đồ tóm tắt&rdquo; nhỏ (~10–20 cụm nối với nhau) để theo dõi hình dạng tổng thể của mạng theo thời gian.
                   </p>
                 </div>
-                <div className="p-3.5 rounded-xl bg-white/10 border border-white/15 space-y-1.5">
-                  <div className="font-extrabold text-rose-300">Bước 3 · GraphPulse lỗi ở đâu?</div>
-                  <p className="text-slate-100 leading-relaxed">
-                    Phương pháp nền <strong>GraphPulse (ICLR 2024)</strong> chạy lại toàn bộ <code>t-SNE</code> + chia lưới + <code>KMeans</code> từ đầu cho từng ngày → vừa <strong>chậm</strong> (98,2% thời gian nằm ở t-SNE), vừa <strong>giật cấu trúc</strong> ngay cả khi dữ liệu chỉ nhiễu nhẹ 1–2%.
+                <div className="p-4 rounded-xl bg-white border border-slate-200 border-t-4 border-t-rose-500 space-y-1.5 shadow-xs">
+                  <div className="font-extrabold text-rose-800">Bước 3 · GraphPulse lỗi ở đâu?</div>
+                  <p className="text-slate-700 leading-relaxed">
+                    Phương pháp nền <strong className="text-slate-900">GraphPulse (ICLR 2024)</strong> chạy lại toàn bộ <code>t-SNE</code> + chia lưới + <code>KMeans</code> từ đầu cho từng ngày → vừa <strong className="text-slate-900">chậm</strong> (98,2% thời gian nằm ở t-SNE), vừa <strong className="text-slate-900">giật cấu trúc</strong> ngay cả khi dữ liệu chỉ nhiễu nhẹ 1–2%.
                   </p>
                 </div>
-                <div className="p-3.5 rounded-xl bg-white/10 border border-white/15 space-y-1.5">
-                  <div className="font-extrabold text-emerald-300">Bước 4 · APts giải quyết ra sao?</div>
-                  <p className="text-slate-100 leading-relaxed">
-                    <strong>APts</strong> ước lượng hệ tham chiếu <strong>đúng 1 lần trên dữ liệu quá khứ</strong> (chuẩn hóa, chiếu PCA, lưới né điểm trùng, ngưỡng gom cụm <M tex="h" />) rồi dùng cố định cho mọi ngày sau → <strong>nhanh hơn 146–186×</strong> và <strong>giảm mạnh biến động do nhiễu</strong>.
+                <div className="p-4 rounded-xl bg-white border border-slate-200 border-t-4 border-t-emerald-600 space-y-1.5 shadow-xs">
+                  <div className="font-extrabold text-emerald-800">Bước 4 · APts giải quyết ra sao?</div>
+                  <p className="text-slate-700 leading-relaxed">
+                    <strong className="text-slate-900">APts</strong> ước lượng hệ tham chiếu <strong className="text-slate-900">đúng 1 lần trên dữ liệu quá khứ</strong> (chuẩn hóa, chiếu PCA, lưới né điểm trùng, ngưỡng gom cụm <M tex="h" />) rồi dùng cố định cho mọi ngày sau → <strong className="text-slate-900">nhanh hơn 146–186×</strong> và <strong className="text-slate-900">giảm mạnh biến động do nhiễu</strong>.
                   </p>
                 </div>
               </div>
 
               {/* Từ điển nhanh 6 thuật ngữ cho người không chuyên */}
-              <div className="p-3.5 rounded-xl bg-black/25 border border-white/10 space-y-2">
-                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-200">
+              <div className="p-4 rounded-xl bg-white border border-blue-200 space-y-2">
+                <div className="inline-flex items-center gap-1.5 text-xs font-extrabold text-blue-900">
                   <HelpCircle size={14} /> Từ điển nhanh 6 khái niệm cốt lõi (đọc trước khi xem Tab 1 → Tab 4):
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-[11.5px] text-slate-200">
-                  <div><strong className="text-white">• Hàm lọc (Lens / Filter):</strong> Phép chiếu dữ liệu 4 chiều xuống mặt phẳng 2D (GraphPulse dùng <code>t-SNE</code>; APts dùng <code>PCA</code> cố định).</div>
-                  <div><strong className="text-white">• Phép phủ (Cover):</strong> Chia mặt phẳng 2D thành các ô chữ nhật chồng lấn nhau (ví dụ lưới 2×2 ô chồng lấn 40%).</div>
-                  <div><strong className="text-white">• Neo thời gian (Anchoring):</strong> Chỉ học tham số trên 70% ngày quá khứ (<code>dev</code>), khóa lại để biến đổi 30% ngày sau (không rò rỉ tương lai).</div>
-                  <div><strong className="text-white">• Điểm trùng (Ties):</strong> Nhiều tài khoản có cùng số giao dịch (VD: đều gửi 1 lần) → dễ nhảy ô hàng loạt nếu biên lưới cắt đúng chỗ đó.</div>
-                  <div><strong className="text-white">• Độ bất ổn (Cohen κ):</strong> Đo bằng <M tex="S = 1 - \kappa \in [0, 1]" /> trên tập nút chung: <strong>0</strong> = bất biến hoàn toàn; <strong>1</strong> = vỡ cụm ngẫu nhiên.</div>
-                  <div><strong className="text-white">• Suy biến (Degeneracy):</strong> Đồ thị Mapper mất hết cạnh hoặc vỡ thành quá nhiều cụm 1 điểm — phải báo cáo kèm để tránh "ổn định giả".</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs text-slate-700">
+                  <div><strong className="text-slate-900">• Hàm lọc (Lens / Filter):</strong> Phép chiếu dữ liệu 4 chiều xuống mặt phẳng 2D (GraphPulse dùng <code>t-SNE</code>; APts dùng <code>PCA</code> cố định).</div>
+                  <div><strong className="text-slate-900">• Phép phủ (Cover):</strong> Chia mặt phẳng 2D thành các ô chữ nhật chồng lấn nhau (ví dụ lưới 2×2 ô chồng lấn 40%).</div>
+                  <div><strong className="text-slate-900">• Neo thời gian (Anchoring):</strong> Chỉ học tham số trên 70% ngày quá khứ (<code>dev</code>), khóa lại để biến đổi 30% ngày sau (không rò rỉ tương lai).</div>
+                  <div><strong className="text-slate-900">• Điểm trùng (Ties):</strong> Nhiều tài khoản có cùng số giao dịch (VD: đều gửi 1 lần) → dễ nhảy ô hàng loạt nếu biên lưới cắt đúng chỗ đó.</div>
+                  <div><strong className="text-slate-900">• Độ bất ổn (Cohen κ):</strong> Đo bằng <M tex="S = 1 - \kappa \in [0, 1]" /> trên tập nút chung: <strong className="text-slate-900">0</strong> = bất biến hoàn toàn; <strong className="text-slate-900">1</strong> = vỡ cụm ngẫu nhiên.</div>
+                  <div><strong className="text-slate-900">• Suy biến (Degeneracy):</strong> Đồ thị Mapper mất hết cạnh hoặc vỡ thành quá nhiều cụm 1 điểm — phải báo cáo kèm để tránh &ldquo;ổn định giả&rdquo;.</div>
                 </div>
               </div>
             </div>
