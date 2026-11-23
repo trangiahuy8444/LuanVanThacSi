@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine,
+  ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine,
 } from 'recharts'
 import {
   DATASET_STATS, LENS_TIMING, PRIOR_DIRECTIONS, CONSECUTIVE_DAY_ROWS,
@@ -43,6 +43,19 @@ export function ExperimentsDashboard() {
     '18 ô Dữ liệu thật': r.medReal,
   }))
 
+  const tieChartData = DATASET_STATS.map((r) => ({
+    ds: r.ds,
+    'Tỷ lệ nút trùng 4D (%)': r.tieNum,
+  }))
+
+  const parseVn = (s) => parseFloat(String(s).replace(',', '.'))
+  const rewireChartData = CAUSAL_54_DATA.map((r) => ({
+    ds: r.ds,
+    'Rewire 5% (APts)': parseVn(r.rew.r05[2]),
+    'Rewire 10% (APts)': parseVn(r.rew.r10[2]),
+    'Rewire 20% (APts)': parseVn(r.rew.r20[2]),
+  }))
+
   return (
     <div className="space-y-8">
       {/* 4 THẺ TỔNG HỢP NHANH */}
@@ -82,6 +95,8 @@ export function ExperimentsDashboard() {
               ['snoise', '2. Nhiễu nhân 1% (Ablation)'],
               ['speed', '3. Hệ số tăng tốc (×)'],
               ['auc', '4. Phát hiện điểm chuyển (AUC)'],
+              ['ties', '5. Tỷ lệ nút trùng 4D (%)'],
+              ['rewire', '6. Phản ứng độ nhạy Rewire'],
             ].map(([k, lbl]) => (
               <button
                 key={k}
@@ -152,6 +167,33 @@ export function ExperimentsDashboard() {
                   <Bar dataKey="Toàn bộ 26 ô" fill="#1d4ed8" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="18 ô Dữ liệu thật" fill="#059669" radius={[4, 4, 0, 0]} />
                 </BarChart>
+              </ResponsiveContainer>
+            )}
+            {chartTab === 'ties' && (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={tieChartData} layout="vertical" margin={{ top: 10, right: 30, left: 25, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 12 }} />
+                  <YAxis type="category" dataKey="ds" width={95} tick={{ fontSize: 12, fontWeight: 700 }} />
+                  <Tooltip formatter={(v) => `${v}%`} />
+                  <Legend />
+                  <ReferenceLine x={50} stroke="#ea580c" strokeDasharray="4 4" label={{ value: 'Ranh giới 2 nhóm dữ liệu', position: 'top', fill: '#c2410c', fontSize: 11 }} />
+                  <Bar dataKey="Tỷ lệ nút trùng 4D (%)" fill="#2563eb" radius={[0, 6, 6, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+            {chartTab === 'rewire' && (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={rewireChartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="ds" tick={{ fontSize: 12, fontWeight: 700 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="Rewire 5% (APts)" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="Rewire 10% (APts)" stroke="#f59e0b" strokeWidth={2.5} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="Rewire 20% (APts)" stroke="#dc2626" strokeWidth={2.8} dot={{ r: 5 }} />
+                </LineChart>
               </ResponsiveContainer>
             )}
           </div>

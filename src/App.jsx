@@ -12,6 +12,9 @@ import {
   MapperWorkbenchLab, WhaleOutlierLab, MechanismDuelLab, CoMembershipKappaLab,
 } from './components/InteractiveLabs'
 import { ExperimentsDashboard } from './components/ExperimentsDashboard'
+import {
+  GraphTo4DFeatureLab, Prop1AndCollapseLab, APtsPseudocodeSection, SensitivityAndWindowVisual,
+} from './components/AdvancedVisuals'
 
 const TABS = [
   { id: 'overview', label: '0. Tổng quan & Pipeline', icon: BookOpen },
@@ -287,6 +290,8 @@ export default function App() {
             </div>
 
             {/* Bàn thí nghiệm 1.1 */}
+            <GraphTo4DFeatureLab />
+
             <MapperWorkbenchLab />
 
             {/* 2. Phân tích 4 nguồn bất ổn của GraphPulse */}
@@ -451,6 +456,10 @@ export default function App() {
             {/* Mô phỏng đối kháng 2.1 */}
             <MechanismDuelLab />
 
+            <Prop1AndCollapseLab />
+
+            <APtsPseudocodeSection />
+
             {/* Phân tích 2 vấn đề cốt lõi về Ablation & Không gian khoảng cách */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="p-5 rounded-xl bg-blue-50 border border-blue-200 space-y-3 flex flex-col justify-between">
@@ -492,6 +501,9 @@ export default function App() {
 
             {/* Mô phỏng tính Kappa 3.1 */}
             <CoMembershipKappaLab />
+
+            {/* Trực quan hóa Đối chứng dương Rewire Hub & Cửa sổ 5 ngày hồi cứu */}
+            <SensitivityAndWindowVisual />
 
             {/* 5 Cơ sở khoa học Chặng 3 */}
             <div className="p-6 rounded-2xl bg-slate-50 border-2 border-indigo-400 space-y-4">
