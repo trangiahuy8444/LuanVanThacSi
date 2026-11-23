@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 export function PainPointDiagram() {
   return (
@@ -175,80 +175,188 @@ export function GraphPulseDiagnosticSvg() {
   )
 }
 
+const APTS_STEPS = [
+  {
+    id: 0,
+    tag: 'Bước 0 · Tiền xử lý',
+    fitTitle: 'Khóa khung giá trị giao dịch',
+    fitSub: 'Lưu mức thấp nhất & cao nhất từ quá khứ',
+    runTitle: 'Đưa tiền giao dịch về thang 1–10',
+    runSub: 'Rồi cộng dồn thành 4 đặc trưng mỗi nút',
+    plain: 'Trước khi tính đặc trưng, mọi giao dịch được quy đổi về cùng thang đo từ 1 đến 10 dựa trên mức nhỏ nhất/lớn nhất của 70% ngày quá khứ. Sau đó mới tính 4 con số cho mỗi tài khoản: tổng gửi, tổng nhận, số lần gửi, số lần nhận.',
+    example: 'Ví dụ: Trong quá khứ, giao dịch nằm từ 1 đến 1.000 token. Ngày mới có giao dịch 500 token → quy về mức ~5,5 trên thang 1–10. Nếu có giao dịch vượt 1.000 → cắt gọn về tối đa 10 (không làm giãn thang đo).',
+    why: 'GraphPulse tính lại theo từng ngày (hoặc toàn chuỗi dễ rò rỉ tương lai). APts khóa mốc từ quá khứ để đảm bảo nhân quả; lưu ý ở bản thực nghiệm mới, khi cực đại quá khứ quá lớn, đa số giao dịch thường bị ép sát mức 1 (nguyên nhân nghi ngờ của ngưỡng h nhỏ).',
+  },
+  {
+    id: 1,
+    tag: 'Bước 1 · Neo [A]',
+    fitTitle: 'Khóa thang chuẩn hóa log',
+    fitSub: 'Lưu min/max của ln(1 + x) trên quá khứ',
+    runTitle: 'Nén số lớn & đưa về [0, 1]',
+    runSub: 'Vượt ngưỡng thì cắt gọn (clip) vào [0, 1]',
+    plain: 'Số giao dịch thường rất lệch (đa số gửi 1–2 lần, vài tài khoản gửi hàng nghìn lần). Ta lấy ln(1 + x) để nén đuôi nặng, rồi chia theo khung min/max đã khóa của quá khứ để mọi đặc trưng nằm gọn trong đoạn [0, 1].',
+    example: 'Ví dụ: Quá khứ có số lần gửi từ 0 đến 1.000 (ln 1 = 0; ln 1001 ≈ 6,91). Tài khoản A gửi 50 lần → ln 51 ≈ 3,93 → chia ra được 0,569. Nếu có "cá mập" gửi 5.000 lần (ra 1,23) → cắt gọn thành 1,00.',
+    why: 'Nhờ khóa khung [0, 1] và cắt gọn (clip), một tài khoản đột biến ở ngày mới không bao giờ làm co giãn tọa độ của hàng trăm tài khoản bình thường khác.',
+  },
+  {
+    id: 2,
+    tag: 'Bước 2 · Neo [P]',
+    fitTitle: 'Khóa 2 trục chiếu PCA (4D → 2D)',
+    fitSub: 'Lưu tâm trung bình và 2 hướng chính',
+    runTitle: 'Chiếu mỗi nút xuống 1 điểm 2D',
+    runSub: 'Chỉ nhân ma trận tuyến tính — cực nhanh',
+    plain: 'Thay vì chạy lại t-SNE ngẫu nhiên tốn thời gian mỗi ngày, APts dùng đúng 2 trục PCA đã học trên 70% ngày quá khứ để chiếu véc-tơ 4 chiều của mỗi tài khoản xuống mặt phẳng 2D.',
+    example: 'Ví dụ: Véc-tơ 4 chiều chuẩn hóa của tài khoản A là [0,57; 0,21; 0,40; 0,15] → sau khi trừ tâm và nhân 2 trục PCA cố định → ra đúng 1 tọa độ cố định trên mặt phẳng, ví dụ (x = 0,32; y = −0,18).',
+    why: 'Triệt tiêu hoàn toàn độ xoay/lật ngẫu nhiên giữa các ngày (Procrustes drift giảm về ~0) và chạy nhanh hơn t-SNE trên 100 lần.',
+  },
+  {
+    id: 3,
+    tag: 'Bước 3 · Neo [t]',
+    fitTitle: 'Khóa lưới 4 ô né điểm trùng',
+    fitSub: 'Dời ranh giới ô vào khe trống lớn nhất',
+    runTitle: 'Xếp điểm 2D vào các ô chồng lấn',
+    runSub: 'Hai ô kề nhau chồng lấn 40% diện tích',
+    plain: 'Mặt phẳng 2D được chia thành lưới 2×2 ô chồng lấn nhau. Khác với chia đều máy móc, APts tìm khe trống lớn nhất quanh vị trí dự kiến (±2% phân vị) để đặt ranh giới ô, tránh cắt ngang qua đám đông có cùng số giao dịch.',
+    example: 'Ví dụ: Có 40 tài khoản cùng gửi đúng 1 giao dịch nên nằm chồng khít tại x = 0,10. Thay vì đặt biên lưới ngay x = 0,10 (nhiễu nhẹ làm nửa nhóm nhảy ô), APts dời biên vào khe trống x = 0,14.',
+    why: 'Một điểm nằm trong vùng chồng lấn có thể thuộc cùng lúc 2 ô — đây chính là cầu nối để bước 4 nối các cụm lại thành đồ thị Mapper.',
+  },
+  {
+    id: 4,
+    tag: 'Bước 4 · Neo [s]',
+    fitTitle: 'Khóa ngưỡng khoảng cách h',
+    fitSub: 'Phân vị 90% khoảng cách láng giềng gần nhất',
+    runTitle: 'Gom cụm & nối thành đồ thị Mapper',
+    runSub: 'Nối cặp cách nhau ≤ h; nối cụm có nút chung',
+    plain: 'Trong từng ô của lưới, APts không dùng KMeans khởi tạo ngẫu nhiên. Hai tài khoản cùng ô được nối với nhau nếu khoảng cách 4 chiều giữa chúng ≤ ngưỡng h đã khóa; mỗi nhóm liên thông tạo thành 1 đỉnh của đồ thị Mapper. Cuối cùng, hai cụm có chung ít nhất 1 tài khoản sẽ được nối cạnh.',
+    example: 'Ví dụ: Trong Ô 1, tài khoản A cách B một đoạn 0,02 ≤ h nên gộp thành Cụm C1; trong Ô 2, B cách C một đoạn 0,03 ≤ h nên gộp thành Cụm C2. Vì C1 và C2 cùng chứa tài khoản B → nối cạnh C1—C2.',
+    why: 'Hoàn toàn tất định (chạy lại bao nhiêu lần vẫn ra đúng 1 kết quả), không phụ thuộc hạt giống ngẫu nhiên như KMeans của GraphPulse.',
+  },
+]
+
 export function APtsTwoPhaseSvg() {
+  const [step, setStep] = useState(1)
+  const cur = APTS_STEPS[step]
+
   return (
-    <div className="bg-white rounded-xl border-2 border-emerald-400 p-3 shadow-sm space-y-3">
-      <svg viewBox="0 0 1204 262" className="w-full h-auto block" role="img" aria-label="Sơ đồ 2 pha của phương pháp APts">
-        <defs>
-          <marker id="arr-apts-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M 0 1 L 10 5 L 0 9 z" fill="#1d4ed8" />
-          </marker>
-          <marker id="arr-apts-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M 0 1 L 10 5 L 0 9 z" fill="#047857" />
-          </marker>
-        </defs>
-        <rect x="8" y="8" width="1188" height="100" rx="12" fill="#eff6ff" stroke="#3b82f6" strokeWidth="1.6" />
-        <text x="20" y="27" fontSize="11" fontWeight="800" fill="#1e3a8a">PHA 1 — ƯỚC LƯỢNG MỘT LẦN TRÊN GIAI ĐOẠN THAM CHIẾU (dev, 70% NGÀY ĐẦU) RỒI KHÓA BỘ THAM SỐ (MỎ NEO)</text>
-        <rect x="16" y="40" width="130" height="56" rx="8" fill="#ffffff" stroke="#2563eb" strokeWidth="1.5" />
-        <text x="81" y="62" fontSize="10.5" fontWeight="800" fill="#1e3a8a" textAnchor="middle">Dữ liệu quá khứ</text>
-        <text x="81" y="80" fontSize="9" fontWeight="600" fill="#475569" textAnchor="middle">các ngày dev</text>
-        <line x1="146" y1="68" x2="162" y2="68" stroke="#1d4ed8" strokeWidth="1.8" markerEnd="url(#arr-apts-blue)" />
-        <rect x="166" y="40" width="190" height="56" rx="8" fill="#dbeafe" stroke="#1d4ed8" strokeWidth="1.8" />
-        <text x="261" y="62" fontSize="10.2" fontWeight="800" fill="#1e3a8a" textAnchor="middle">🔒 Neo [w]: lo_w, hi_w</text>
-        <text x="261" y="80" fontSize="8.8" fontWeight="400" fill="#1e293b" textAnchor="middle">min/max trọng số giao dịch thô</text>
-        <line x1="356" y1="68" x2="370" y2="68" stroke="#1d4ed8" strokeWidth="1.8" markerEnd="url(#arr-apts-blue)" />
-        <rect x="374" y="40" width="190" height="56" rx="8" fill="#dbeafe" stroke="#1d4ed8" strokeWidth="1.8" />
-        <text x="469" y="62" fontSize="10.2" fontWeight="800" fill="#1e3a8a" textAnchor="middle">🔒 Neo [A]: lo, hi</text>
-        <text x="469" y="80" fontSize="8.8" fontWeight="400" fill="#1e293b" textAnchor="middle">min/max của ln(1 + X) trên dev</text>
-        <line x1="564" y1="68" x2="578" y2="68" stroke="#1d4ed8" strokeWidth="1.8" markerEnd="url(#arr-apts-blue)" />
-        <rect x="582" y="40" width="190" height="56" rx="8" fill="#dbeafe" stroke="#1d4ed8" strokeWidth="1.8" />
-        <text x="677" y="62" fontSize="10.2" fontWeight="800" fill="#1e3a8a" textAnchor="middle">🔒 Neo [P]: μ_dev, W_dev</text>
-        <text x="677" y="80" fontSize="8.8" fontWeight="400" fill="#1e293b" textAnchor="middle">trung bình + 2 trục PCA (4D → 2D)</text>
-        <line x1="772" y1="68" x2="786" y2="68" stroke="#1d4ed8" strokeWidth="1.8" markerEnd="url(#arr-apts-blue)" />
-        <rect x="790" y="40" width="190" height="56" rx="8" fill="#dbeafe" stroke="#1d4ed8" strokeWidth="1.8" />
-        <text x="885" y="62" fontSize="10.2" fontWeight="800" fill="#1e3a8a" textAnchor="middle">🔒 Neo [t]: lưới C_dev</text>
-        <text x="885" y="80" fontSize="8.8" fontWeight="400" fill="#1e293b" textAnchor="middle">biên đặt vào khe trống (±2%)</text>
-        <line x1="980" y1="68" x2="994" y2="68" stroke="#1d4ed8" strokeWidth="1.8" markerEnd="url(#arr-apts-blue)" />
-        <rect x="998" y="40" width="190" height="56" rx="8" fill="#dbeafe" stroke="#1d4ed8" strokeWidth="1.8" />
-        <text x="1093" y="62" fontSize="10.2" fontWeight="800" fill="#1e3a8a" textAnchor="middle">🔒 Neo [s]: ngưỡng h</text>
-        <text x="1093" y="80" fontSize="8.8" fontWeight="400" fill="#1e293b" textAnchor="middle">phân vị 90% khoảng cách 1-NN (4D)</text>
-        <rect x="8" y="132" width="1188" height="122" rx="12" fill="#ecfdf5" stroke="#10b981" strokeWidth="1.8" />
-        <rect x="16" y="146" width="130" height="62" rx="8" fill="#ffffff" stroke="#059669" strokeWidth="1.5" />
-        <text x="81" y="170" fontSize="10.5" fontWeight="800" fill="#065f46" textAnchor="middle">Ngày mới t</text>
-        <text x="81" y="188" fontSize="8.8" fill="#475569" textAnchor="middle">chỉ dùng tham số đã khóa</text>
-        <line x1="146" y1="177" x2="162" y2="177" stroke="#047857" strokeWidth="2" markerEnd="url(#arr-apts-green)" />
-        <rect x="166" y="146" width="190" height="62" rx="8" fill="#ffffff" stroke="#059669" strokeWidth="1.6" />
-        <text x="261" y="166" fontSize="10" fontWeight="800" fill="#065f46" textAnchor="middle">0. Co giãn trọng số</text>
-        <text x="261" y="182" fontSize="8.4" fontWeight="400" fill="#1e293b" textAnchor="middle">w′ = clip(1 + 9(w − lo_w)/(hi_w − lo_w), 1, 10)</text>
-        <text x="261" y="196" fontSize="8.8" fontWeight="600" fill="#475569" textAnchor="middle">rồi tính 4 đặc trưng → X_t</text>
-        <line x1="356" y1="177" x2="370" y2="177" stroke="#047857" strokeWidth="2" markerEnd="url(#arr-apts-green)" />
-        <rect x="374" y="146" width="190" height="62" rx="8" fill="#ffffff" stroke="#059669" strokeWidth="1.6" />
-        <text x="469" y="168" fontSize="10" fontWeight="800" fill="#065f46" textAnchor="middle">1. Chuẩn hóa → Z_t</text>
-        <text x="469" y="186" fontSize="8.8" fontWeight="400" fill="#1e293b" textAnchor="middle">clip((ln(1 + X_t) − lo)/(hi − lo), 0, 1)</text>
-        <line x1="564" y1="177" x2="578" y2="177" stroke="#047857" strokeWidth="2" markerEnd="url(#arr-apts-green)" />
-        <rect x="582" y="146" width="190" height="62" rx="8" fill="#ffffff" stroke="#059669" strokeWidth="1.6" />
-        <text x="677" y="168" fontSize="10" fontWeight="800" fill="#065f46" textAnchor="middle">2. Chiếu → L_t (2D)</text>
-        <text x="677" y="186" fontSize="8.8" fontWeight="400" fill="#1e293b" textAnchor="middle">L_t = (Z_t − μ_dev) · W_devᵀ</text>
-        <line x1="772" y1="177" x2="786" y2="177" stroke="#047857" strokeWidth="2" markerEnd="url(#arr-apts-green)" />
-        <rect x="790" y="146" width="190" height="62" rx="8" fill="#ffffff" stroke="#059669" strokeWidth="1.6" />
-        <text x="885" y="168" fontSize="10" fontWeight="800" fill="#065f46" textAnchor="middle">3. Gán vào 4 ô</text>
-        <text x="885" y="186" fontSize="8.8" fontWeight="400" fill="#1e293b" textAnchor="middle">xếp L_t vào lưới C_dev</text>
-        <line x1="980" y1="177" x2="994" y2="177" stroke="#047857" strokeWidth="2" markerEnd="url(#arr-apts-green)" />
-        <rect x="998" y="146" width="190" height="62" rx="8" fill="#d1fae5" stroke="#047857" strokeWidth="2" />
-        <text x="1093" y="168" fontSize="10" fontWeight="800" fill="#064e3b" textAnchor="middle">4. Gom cụm → Mapper M_t</text>
-        <text x="1093" y="186" fontSize="8.8" fontWeight="700" fill="#047857" textAnchor="middle">nối cặp có khoảng cách 4D ≤ h</text>
-        <line x1="261" y1="96" x2="261" y2="143" stroke="#047857" strokeWidth="2" strokeDasharray="4,2" markerEnd="url(#arr-apts-green)" />
-        <line x1="469" y1="96" x2="469" y2="143" stroke="#047857" strokeWidth="2" strokeDasharray="4,2" markerEnd="url(#arr-apts-green)" />
-        <line x1="677" y1="96" x2="677" y2="143" stroke="#047857" strokeWidth="2" strokeDasharray="4,2" markerEnd="url(#arr-apts-green)" />
-        <line x1="885" y1="96" x2="885" y2="143" stroke="#047857" strokeWidth="2" strokeDasharray="4,2" markerEnd="url(#arr-apts-green)" />
-        <line x1="1093" y1="96" x2="1093" y2="143" stroke="#047857" strokeWidth="2" strokeDasharray="4,2" markerEnd="url(#arr-apts-green)" />
-        <text x="20" y="240" fontSize="11" fontWeight="800" fill="#065f46">PHA 2 — ÁP DỤNG CHO MỖI NGÀY MỚI CỦA GIAI ĐOẠN ĐÁNH GIÁ (hold, 30% NGÀY CUỐI); KHÔNG ƯỚC LƯỢNG LẠI THAM SỐ NÀO</text>
-      </svg>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-800">
-        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200"><strong>w, lo_w, hi_w:</strong> w là giá trị một giao dịch. lo_w, hi_w là giá trị giao dịch nhỏ nhất và lớn nhất trên các ngày dev. Bước 0 đưa mọi giao dịch về thang 1–10 rồi mới tính 4 đặc trưng của mỗi tài khoản (tổng gửi, tổng nhận, số lần gửi, số lần nhận). Lưu ý: khi hi_w rất lớn so với giao dịch thường, mọi giao dịch thường thành ≈ 1. Ở các thực nghiệm đầu (Bảng 4, Bảng 6), lo_w và hi_w lấy trên toàn chuỗi, tức có dùng tương lai.</div>
-        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200"><strong>lo, hi:</strong> giá trị nhỏ nhất và lớn nhất của ln(1 + x) trên các ngày dev, tính riêng cho từng đặc trưng (mỗi bộ gồm 4 số). Ví dụ minh họa: nếu "số lần gửi" trên dev nằm trong 0–1.000 thì lo = ln 1 = 0, hi = ln 1001 ≈ 6,909; tài khoản gửi 50 lần có ln 51 ≈ 3,932, chia ra được 0,569.</div>
-        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200"><strong>clip(v, a, b):</strong> cắt vào khoảng [a, b]: nhỏ hơn a thì lấy a, lớn hơn b thì lấy b, ở giữa giữ nguyên. Ví dụ: tài khoản gửi 5.000 lần (vượt mọi giá trị dev) có ln 5001 ≈ 8,517 → 1,233 → clip thành 1. Nhờ vậy thang đo không đổi theo ngày.</div>
-        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200"><strong>μ_dev, W_dev, C_dev, h:</strong> μ_dev là điểm trung bình của Z trên dev (4 số); W_dev là 2 trục PCA (mỗi trục 4 hệ số), nên L_t là 2 tọa độ của mỗi tài khoản; C_dev là 4 ô chia trên mặt phẳng đó; h là khoảng cách tối đa để nối hai tài khoản trong cùng một ô. Hai tài khoản cùng cụm nếu nối được với nhau qua một chuỗi các cặp có khoảng cách ≤ h.</div>
+    <div className="bg-white rounded-2xl border-2 border-emerald-400 p-4 md:p-5 shadow-sm space-y-4">
+      {/* Header + Hướng dẫn tương tác */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+        <div>
+          <div className="text-xs font-extrabold uppercase tracking-wider text-emerald-800">
+            KIẾN TRÚC 2 PHA CỦA APts — BẤM TỪNG BƯỚC (0 → 4) ĐỂ XEM GIẢI THÍCH &amp; VÍ DỤ SỐ
+          </div>
+          <p className="text-xs text-slate-600 mt-0.5">
+            <strong>Ý tưởng cốt lõi:</strong> Hàng trên (xanh dương) chỉ tính <strong>đúng 1 lần</strong> trên 70% ngày quá khứ rồi khóa lại; hàng dưới (xanh lá) dùng đúng bộ khóa đó cho từng ngày mới.
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setStep((s) => Math.max(0, s - 1))}
+            disabled={step === 0}
+            className="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-300 bg-slate-50 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+          >
+            ← Bước trước
+          </button>
+          <button
+            onClick={() => setStep((s) => Math.min(4, s + 1))}
+            disabled={step === 4}
+            className="px-2.5 py-1 rounded-lg text-xs font-bold border border-emerald-600 bg-emerald-700 text-white hover:bg-emerald-800 disabled:opacity-40 cursor-pointer"
+          >
+            Bước tiếp →
+          </button>
+        </div>
+      </div>
+
+      {/* 2-Phase Interactive Grid (5 clickable columns) */}
+      <div className="space-y-2.5">
+        {/* PHA 1 */}
+        <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200 space-y-2">
+          <div className="text-[11px] font-extrabold uppercase tracking-wide text-blue-900">
+            PHA 1 — HỌC &amp; KHÓA THAM SỐ MỘT LẦN TRÊN DỮ LIỆU QUÁ KHỨ (70% NGÀY ĐẦU)
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+            {APTS_STEPS.map((st) => {
+              const active = st.id === step
+              return (
+                <button
+                  key={`p1-${st.id}`}
+                  onClick={() => setStep(st.id)}
+                  className={`text-left p-2.5 rounded-xl border-2 transition cursor-pointer ${
+                    active
+                      ? 'bg-blue-700 text-white border-blue-900 shadow-md scale-[1.01]'
+                      : 'bg-white text-slate-800 border-blue-200 hover:border-blue-400 hover:bg-blue-50/60'
+                  }`}
+                >
+                  <div className={`text-[10.5px] font-extrabold ${active ? 'text-sky-200' : 'text-blue-700'}`}>
+                    🔒 {st.tag}
+                  </div>
+                  <div className="text-xs font-extrabold mt-0.5 leading-snug">{st.fitTitle}</div>
+                  <div className={`text-[11px] mt-1 leading-snug ${active ? 'text-blue-100' : 'text-slate-600'}`}>
+                    {st.fitSub}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Connector indicator */}
+        <div className="flex items-center justify-center text-[11px] font-bold text-emerald-800 gap-2">
+          <span>↓ Truyền bộ tham số đã khóa xuống Pha 2 (không ước lượng lại ở ngày mới) ↓</span>
+        </div>
+
+        {/* PHA 2 */}
+        <div className="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200 space-y-2">
+          <div className="text-[11px] font-extrabold uppercase tracking-wide text-emerald-900">
+            PHA 2 — ÁP DỤNG NHANH CHO TỪNG NGÀY MỚI (30% NGÀY ĐÁNH GIÁ)
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+            {APTS_STEPS.map((st) => {
+              const active = st.id === step
+              return (
+                <button
+                  key={`p2-${st.id}`}
+                  onClick={() => setStep(st.id)}
+                  className={`text-left p-2.5 rounded-xl border-2 transition cursor-pointer ${
+                    active
+                      ? 'bg-emerald-700 text-white border-emerald-900 shadow-md scale-[1.01]'
+                      : 'bg-white text-slate-800 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/60'
+                  }`}
+                >
+                  <div className={`text-[10.5px] font-extrabold ${active ? 'text-emerald-200' : 'text-emerald-700'}`}>
+                    ▶ {st.tag}
+                  </div>
+                  <div className="text-xs font-extrabold mt-0.5 leading-snug">{st.runTitle}</div>
+                  <div className={`text-[11px] mt-1 leading-snug ${active ? 'text-emerald-100' : 'text-slate-600'}`}>
+                    {st.runSub}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Detailed plain-language explanation card for the selected step */}
+      <div className="p-4 rounded-xl bg-slate-50 border-2 border-slate-200 space-y-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="px-2.5 py-0.5 rounded-md bg-blue-700 text-white text-xs font-extrabold">{cur.tag}</span>
+          <span className="font-extrabold text-sm text-slate-900">{cur.fitTitle} → {cur.runTitle}</span>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 text-xs leading-relaxed">
+          <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-1">
+            <div className="font-extrabold text-blue-900">1. Bước này làm gì?</div>
+            <p className="text-slate-700">{cur.plain}</p>
+          </div>
+          <div className="p-3 rounded-lg bg-white border border-emerald-200 space-y-1">
+            <div className="font-extrabold text-emerald-900">2. Ví dụ số dễ hiểu</div>
+            <p className="text-slate-700">{cur.example}</p>
+          </div>
+          <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 space-y-1">
+            <div className="font-extrabold text-amber-900">3. Tại sao khác GraphPulse?</div>
+            <p className="text-amber-950">{cur.why}</p>
+          </div>
+        </div>
       </div>
     </div>
   )
